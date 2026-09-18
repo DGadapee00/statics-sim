@@ -1,0 +1,791 @@
+/* ---------- Practice: problems panel, blind mode, practice exam ---------- */
+
+.practice-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.practice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 211, 69, 0.45);
+  background: rgba(244, 211, 69, 0.08);
+  color: var(--yellow);
+  font-family: var(--serif);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+
+.practice-btn:hover,
+.practice-btn.active {
+  background: rgba(244, 211, 69, 0.18);
+}
+
+.practice-btn kbd {
+  font-family: var(--font);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-muted);
+  border: 1px solid var(--border-hover);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.practice-stat {
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.practice-open #eq-panel {
+  display: none;
+}
+
+/* Keep lab legends clear of the panel. */
+body.practice-open .legend {
+  left: calc(min(384px, 100vw - 360px) + 32px);
+}
+
+.readout:empty {
+  display: none;
+}
+
+.problems {
+  top: var(--below-brand, 230px);
+  left: 16px;
+  width: min(384px, calc(100vw - 360px));
+  max-height: calc(100vh - var(--below-brand, 230px) - 118px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(14, 15, 18, 0.94);
+}
+
+/* The readout is hidden while blind, so the panel can run to the hint bar. */
+body.problem-blind .problems {
+  max-height: calc(100vh - var(--below-brand, 230px) - 56px);
+}
+
+.problems > * {
+  flex-shrink: 0;
+}
+
+.pb-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pb-kicker {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.pb-h {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.pb-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.pb-x,
+.pb-back,
+.linkish {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pb-x {
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.pb-back {
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.pb-x:hover,
+.pb-back:hover,
+.linkish:hover {
+  color: var(--text);
+}
+
+.linkish {
+  font-size: inherit;
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: rgba(88, 196, 221, 0.35);
+  text-underline-offset: 2px;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.pb-meter-bar,
+.pb-ch-meter {
+  position: relative;
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(236, 230, 226, 0.1);
+  overflow: hidden;
+}
+
+.pb-meter-bar i,
+.pb-ch-meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--green);
+  border-radius: 2px;
+}
+
+.pb-meter-text {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pb-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.pb-actions .btn.accent,
+.pb-row .btn.accent {
+  width: auto;
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.pb-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pb-row .btn {
+  flex: 1 1 auto;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn.due {
+  color: var(--yellow);
+  border-color: rgba(244, 211, 69, 0.4);
+}
+
+.pb-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pb-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pb-chip:hover {
+  color: var(--text);
+}
+
+.pb-chip.on {
+  color: var(--text);
+  border-color: rgba(88, 196, 221, 0.55);
+  background: var(--accent-soft);
+}
+
+.pb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pb-ch-head {
+  display: grid;
+  grid-template-columns: 1fr 56px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.pb-ch-name {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.pb-ch-count {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pb-item:hover {
+  background: rgba(236, 230, 226, 0.05);
+}
+
+.pb-item-title {
+  min-width: 0;
+}
+
+.pb-item-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.pb-level {
+  letter-spacing: 1px;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+
+.pb-lab-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.pb-lab-badge.here {
+  color: var(--blue);
+  border-color: rgba(88, 196, 221, 0.45);
+}
+
+.pb-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-dim);
+}
+
+.pb-dot.s-learning {
+  border-color: var(--blue);
+  background: rgba(88, 196, 221, 0.35);
+}
+
+.pb-dot.s-due {
+  border-color: var(--yellow);
+  background: rgba(244, 211, 69, 0.35);
+}
+
+.pb-dot.s-missed {
+  border-color: var(--red);
+  background: rgba(252, 98, 85, 0.35);
+}
+
+.pb-dot.s-mastered {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.pb-foot,
+.pb-empty {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.pb-dim {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.pb-text {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.pb-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border-hover);
+  padding-left: 8px;
+}
+
+.pb-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  background: var(--accent-soft);
+  border: 1px solid rgba(88, 196, 221, 0.25);
+}
+
+.pb-banner.warn {
+  background: rgba(244, 211, 69, 0.08);
+  border-color: rgba(244, 211, 69, 0.3);
+}
+
+.pb-banner.good {
+  background: rgba(131, 193, 103, 0.08);
+  border-color: rgba(131, 193, 103, 0.3);
+}
+
+.pb-banner.quiet {
+  background: transparent;
+  border-color: var(--border);
+}
+
+.pb-parts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pb-part {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 0;
+  min-width: 0;
+}
+
+.pb-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0;
+}
+
+.pb-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pb-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hover);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-input.sym {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+}
+
+.pb-input:focus {
+  outline: none;
+  border-color: var(--yellow);
+}
+
+.pb-input[readonly] {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.pb-unit {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pb-mark {
+  display: inline-block;
+  min-width: 14px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pb-part.ok .pb-mark {
+  color: var(--green);
+}
+
+.pb-part.bad .pb-mark {
+  color: var(--red);
+}
+
+.pb-part.ok .pb-input {
+  border-color: rgba(131, 193, 103, 0.6);
+}
+
+.pb-part.bad .pb-input,
+.pb-part.empty .pb-input {
+  border-color: rgba(252, 98, 85, 0.6);
+}
+
+.pb-fb {
+  font-size: 11.5px;
+  color: var(--red);
+}
+
+.pb-fb:empty,
+.pb-parse:empty,
+.pb-labval:empty {
+  display: none;
+}
+
+.pb-fb.good {
+  color: var(--green);
+}
+
+.pb-parse {
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.pb-parse.ok {
+  color: var(--green);
+}
+
+.pb-parse.bad {
+  color: var(--gold);
+}
+
+/* A number held until the formula above it is right. */
+.pb-held {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.pb-part.held .pb-label {
+  color: var(--text-dim);
+}
+
+.pb-part.held .pb-input {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pb-symhelp {
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.pb-symhelp code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--text-muted);
+}
+
+.pb-want {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pb-labval {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-lab-tag {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--blue);
+  margin-right: 4px;
+}
+
+.agree {
+  color: var(--green);
+}
+
+.disagree {
+  color: var(--gold);
+}
+
+.pb-opt {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 5px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pb-opt:hover {
+  background: rgba(236, 230, 226, 0.05);
+}
+
+.pb-opt input {
+  margin-top: 3px;
+  accent-color: var(--yellow);
+}
+
+.pb-opt.key {
+  background: rgba(131, 193, 103, 0.12);
+}
+
+.pb-opt.wrong {
+  background: rgba(252, 98, 85, 0.1);
+}
+
+.pb-part.choice legend {
+  margin-bottom: 2px;
+}
+
+.pb-rubric {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(236, 230, 226, 0.05);
+}
+
+.pb-hints {
+  display: grid;
+  gap: 4px;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--yellow);
+}
+
+.pb-solution {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.pb-solution h3 {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--yellow);
+}
+
+.pb-verdict {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.pb-verdict.good {
+  color: var(--green);
+}
+
+.pb-steps {
+  display: grid;
+  gap: 5px;
+  padding-left: 18px;
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/*
+ * KaTeX renders at 1.21em by default, which makes a typeset formula tower over the sentence it
+ * sits in. Bring it back to the size of the prose, and give a wrapped line room to breathe.
+ */
+.pb-text .katex,
+.pb-steps .katex,
+.pb-hints .katex,
+.pb-label .katex,
+.pb-rubric .katex,
+.pb-opt .katex,
+.pb-want .katex {
+  font-size: 1.06em;
+}
+
+.pb-steps li,
+.pb-hints li {
+  line-height: 1.7;
+}
+
+.pb-key {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.pb-labchecks:empty {
+  display: none;
+}
+
+.pb-labrow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.pb-timer {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.pb-timer.low {
+  color: var(--red);
+}
+
+.pb-examnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pb-examnav button {
+  width: 28px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pb-examnav button.done {
+  color: var(--text);
+  background: rgba(236, 230, 226, 0.08);
+}
+
+.pb-examnav button.on {
+  color: var(--yellow);
+  border-color: rgba(244, 211, 69, 0.6);
+}
+
+.pb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.pb-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.pb-table td:nth-child(2) {
+  width: 70px;
+  padding: 0 10px;
+}
+
+.pb-table td.num {
+  text-align: right;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Blind mode: the lab keeps its geometry; numbers that would give the answer away are hidden. */
+body.problem-blind #eq-live,
+body.problem-blind #insight,
+body.problem-blind #mini-plot,
+body.problem-blind #readout {
+  visibility: hidden;
+}
+
+body.problem-blind .veiled,
+body.problem-blind .veiled * {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+
+body.problem-blind .veiled {
+  background: rgba(236, 230, 226, 0.12);
+  border-radius: 3px;
+}
+
+body.problem-blind .veiled .katex {
+  visibility: hidden;
+}
+
+@media (max-width: 980px) {
+  .problems {
+    width: min(360px, calc(100vw - 40px));
+  }
+}
+
+@media (max-width: 720px) {
+  body.practice-open .controls {
+    display: none;
+  }
+  .problems {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-height: calc(100vh - var(--below-brand, 230px) - 40px);
+  }
+}

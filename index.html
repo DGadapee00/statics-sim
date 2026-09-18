@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TRUSS — Statics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/styles/main.css" />
+    <link rel="stylesheet" href="/src/styles/practice.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="c"></canvas>
+
+      <header class="hud panel brand" id="brand">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="11" fill="none" stroke="#58C4DD" stroke-width="2" />
+          <circle cx="20" cy="20" r="3.2" fill="#FC6255" />
+          <g stroke="#F4D345" stroke-width="1.8" stroke-linecap="round" fill="#F4D345">
+            <line x1="20" y1="12.5" x2="20" y2="4.5" /><path d="M20 2 L17.6 6 L22.4 6 Z" stroke="none" />
+            <line x1="27.5" y1="20" x2="35.5" y2="20" /><path d="M38 20 L34 17.6 L34 22.4 Z" stroke="none" />
+            <line x1="20" y1="27.5" x2="20" y2="35.5" /><path d="M20 38 L17.6 34 L22.4 34 Z" stroke="none" />
+            <line x1="12.5" y1="20" x2="4.5" y2="20" /><path d="M2 20 L6 17.6 L6 22.4 Z" stroke="none" />
+          </g>
+        </svg>
+        <div class="brand-text">
+          <h1>TRUSS</h1>
+          <p class="subtitle" id="brand-sub">Statics</p>
+        </div>
+        <nav class="exam-tabs" id="exam-tabs" aria-label="Exams"></nav>
+        <nav class="lab-tabs" id="lab-tabs" role="tablist" aria-label="Labs"></nav>
+        <div class="practice-row">
+          <button type="button" class="practice-btn" id="btn-practice" aria-expanded="false" aria-controls="problems">
+            <span>Practice</span><kbd>P</kbd>
+          </button>
+          <span class="practice-stat" id="practice-stat"></span>
+        </div>
+      </header>
+
+      <aside class="hud panel problems" id="problems" aria-label="Practice problems" hidden></aside>
+
+      <aside class="hud panel eq-panel" id="eq-panel">
+        <div class="law" id="law-line"></div>
+        <div class="eq-live" id="eq-live"></div>
+        <div class="insight" id="insight">
+          <div class="insight-title" id="insight-title"></div>
+          <div id="insight-body"></div>
+        </div>
+        <canvas id="mini-plot" width="300" height="96" hidden></canvas>
+      </aside>
+
+      <aside class="hud panel toggles" id="toggles">
+        <div id="toggle-host"></div>
+        <button type="button" class="btn ghost" id="btn-reset-cam">Reset view</button>
+      </aside>
+
+      <aside class="hud panel controls" id="controls">
+        <div class="panel-header">
+          <h2>Setup</h2>
+          <span class="hint" id="setup-hint">Drag charges through the surface</span>
+        </div>
+
+        <label class="field">
+          <span>Scenario</span>
+          <select id="scenario"></select>
+        </label>
+
+        <div id="lab-controls"></div>
+      </aside>
+
+      <div id="legend-host"></div>
+
+      <footer class="hud panel readout" id="readout"></footer>
+
+      <div class="hud hint-bar" id="hint-bar">
+        <span id="hint-orbit">Drag to orbit</span>
+        <span class="sep">·</span>
+        <span>Scroll to zoom</span>
+        <span class="sep">·</span>
+        <span id="hint-action">Drag a charge through the surface</span>
+        <span class="sep">·</span>
+        <span id="hint-plane">Shift-drag for height</span>
+        <span class="sep">·</span>
+        <span>1–9 labs · [ ] exams</span>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
