@@ -1,0 +1,4 @@
+# This build carries generated practice problems whose numbers and answers come from
+# Hibbeler's problem sets. It is meant for the study group, not for search engines.
+User-agent: *
+Disallow: /

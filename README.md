@@ -8,7 +8,17 @@ Built on the engine from [flux-phy2049](https://github.com/DGadapee00/flux-phy20
 generator, spaced review, symbols-before-numbers input and the typeset panels are the same code;
 the physics and the labs are new.
 
-## Run
+## Open it in a browser
+
+`npm run build` turns the app into a plain folder of files that any static host can serve, which
+makes TRUSS a link instead of an install — no Git, no Node, no terminal on the other end. Deep links
+survive the move: `#/u3/truss`, or a single problem at `#/u3/truss?p=ch6.truss-joints&s=0`.
+
+Nothing is published yet. **[DEPLOY.md](DEPLOY.md)** has the three routes and what each one exposes —
+the build carries Hibbeler's numbers and printed answers, so read that section before hosting it
+somewhere open.
+
+## Run it locally
 
 ```bash
 git clone https://github.com/DGadapee00/statics-sim.git
