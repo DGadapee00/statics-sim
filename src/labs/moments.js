@@ -65,7 +65,7 @@ export default defineLab({
             ${sliderRow('mo-x', 'Applied at x (m)', 4, -4, 4, 0.1)}
             ${sliderRow('mo-y', 'Applied at y (m)', 3, -4, 4, 0.1)}
             <label class="field"><span>Slide along the line of action</span>
-              <div class="slider-row"><input type="range" id="mo-slide" min="-3" max="3" step="0.05" value="0" /></div>
+              <div class="slide-only"><input type="range" id="mo-slide" min="-3" max="3" step="0.05" value="0" /></div>
             </label>
           </div>
           <div id="mo-couple">

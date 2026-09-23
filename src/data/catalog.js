@@ -25,8 +25,8 @@ export const EXAMS = [
     title: 'Rigid bodies & trusses',
     chapters: '5–6',
     date: 'Ch 5–6',
-    labs: ['truss'],
-    coming: ['Frames & machines'],
+    labs: ['truss', 'frame'],
+    coming: [],
   },
   {
     id: 'u4',
@@ -34,8 +34,8 @@ export const EXAMS = [
     title: 'Internal loads, centroids, MOI',
     chapters: '7, 9–10',
     date: 'Ch 7–10',
-    labs: [],
-    coming: ['Internal loads', 'Centroids', 'Moment of inertia'],
+    labs: ['beam', 'sections'],
+    coming: [],
   },
 ];
 
@@ -44,6 +44,9 @@ export const LAB_META = {
   particle: { id: 'particle', exam: 'u2', title: 'Particle' },
   moments: { id: 'moments', exam: 'u2', title: 'Moments' },
   truss: { id: 'truss', exam: 'u3', title: 'Truss' },
+  frame: { id: 'frame', exam: 'u3', title: 'Frame' },
+  beam: { id: 'beam', exam: 'u4', title: 'Beam' },
+  sections: { id: 'sections', exam: 'u4', title: 'Sections' },
 };
 
 export const CHAPTER_TITLES = {

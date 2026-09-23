@@ -14,7 +14,8 @@ import { distributedLoad } from './statics.js';
  *
  * `loads` are point loads { x, Fx, Fy, M } and `dist` a list of { w, a, b } distributed loads.
  * Fy and w(x) are both signed the same way: positive is UP. A load of 120 lb/ft pressing down on
- * the beam is therefore w: () => -120, not +120.
+ * the beam is therefore w: () => -120, not +120. A couple M is counterclockwise-positive, the same
+ * as rigidBody2D reports a fixed support's moment, so a reaction can be passed straight through.
  */
 export function internalAt(cut, { reactions = [], loads = [], dist = [] }) {
   let N = 0;
@@ -24,7 +25,9 @@ export function internalAt(cut, { reactions = [], loads = [], dist = [] }) {
     if (x > cut + 1e-12) return;
     N -= Fx || 0;
     V += Fy || 0;
-    M += (Fy || 0) * (cut - x) + (Mo || 0);
+    // The internal moment on the left segment's cut face balances the loads' moments about the
+    // cut: an upward force to the left sags the beam (+), a counterclockwise couple hogs it (−).
+    M += (Fy || 0) * (cut - x) - (Mo || 0);
   };
   for (const r of reactions) take(r.x, r.Fx, r.Fy, r.M);
   for (const p of loads) take(p.x, p.Fx, p.Fy, p.M);

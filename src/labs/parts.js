@@ -18,12 +18,13 @@ export const sliderRow = (id, text, val, min, max, step = 1) => `
             <span>${text}</span>
             <div class="slider-row">
               <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" />
-              <span class="mono val" id="${id}-val">${val}</span>
-              <input type="number" class="num" id="${id}-num" step="${step}" value="${val}" />
             </div>
           </label>`;
 
-/** Wire a sliderRow: `apply(slice, value)` writes the state; typed values may widen the range. */
+/**
+ * Wire a sliderRow: `apply(slice, value)` writes the state. The HUD gives every slider row a box
+ * for typing an exact value (src/ui/hud.js), which drives the range input, so one listener is enough.
+ */
 export function bindSlider(api, id, apply) {
   const s = document.getElementById(id);
   const n = document.getElementById(`${id}-num`);

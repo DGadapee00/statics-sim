@@ -16,7 +16,7 @@ const triTruss = ($) => ({
 
 export default [
   problem({
-    ...U3, id: 'ch5.beam-reactions', ch: '5', src: 'Part 3 · 5.2, 5.8, 5.10', title: 'Reactions on a simply supported beam', kind: 'numeric', topics: ['equilibrium', 'reactions'],
+    ...U3, id: 'ch5.beam-reactions', ch: '5', lab: 'beam', src: 'Part 3 · 5.2, 5.8, 5.10', title: 'Reactions on a simply supported beam', kind: 'numeric', topics: ['equilibrium', 'reactions'],
     vars: { L: range(4, 20, 1, 'ft'), P: range(100, 2000, 50, 'lb'), a: range(1, 18, 1, 'ft') },
     derive: ($) => {
       const sol = rigidBody2D({
@@ -41,10 +41,15 @@ export default [
       String.raw`$\sum M_A = 0:\; B_y L - Pa = 0 \Rightarrow B_y = ${texNum($.RB)}\ \text{lb}$`,
       String.raw`$\sum F_y = 0:\; A_y = P - B_y = ${texNum($.RA)}\ \text{lb}$`,
     ],
+    sim: {
+      scenario: 'point',
+      setup: (s, $) => void Object.assign(s, { L: $.L, P: $.a <= $.L ? $.P : 0, a: $.a, dist: 'none', w: 0, M0: 0, c: $.L / 2 }),
+      read: (c) => ({ RA: c.beam.reactions[0].Fy, RB: c.beam.reactions[1].Fy }),
+    },
     cases: [kase('hand', { L: 10, P: 600, a: 4 }, { RA: 360, RB: 240 })],
   }),
   problem({
-    ...U3, id: 'ch5.distributed', ch: '5', src: 'Part 3 · distributed loads', title: 'Reactions under a distributed load', kind: 'numeric', level: 2, topics: ['equilibrium', 'distributed-load'],
+    ...U3, id: 'ch5.distributed', ch: '5', lab: 'beam', src: 'Part 3 · distributed loads', title: 'Reactions under a distributed load', kind: 'numeric', level: 2, topics: ['equilibrium', 'distributed-load'],
     vars: { L: range(4, 16, 1, 'ft'), w: range(20, 400, 10, 'lb/ft'), shape: choice(['uniform', 'uniform'], ['triangular', 'triangular, zero at A']) },
     derive: ($) => {
       const eq = $.shape === 'uniform' ? uniformLoad($.w, 0, $.L) : triangularLoad($.w, 0, $.L);
@@ -70,6 +75,11 @@ export default [
       String.raw`$W = ${texNum($.W)}\ \text{lb}$ acting at $x = ${texNum($.xbar)}\ \text{ft}$`,
       String.raw`$A_y = ${texNum($.RA)}$ lb, $B_y = ${texNum($.RB)}$ lb`,
     ],
+    sim: {
+      scenario: 'udl',
+      setup: (s, $) => void Object.assign(s, { L: $.L, P: 0, dist: $.shape, w: $.w, M0: 0, c: $.L / 2 }),
+      read: (c) => ({ W: Math.abs(c.beam.dist.F), xbar: c.beam.dist.x, RA: c.beam.reactions[0].Fy, RB: c.beam.reactions[1].Fy }),
+    },
     cases: [
       kase('uniform', { L: 10, w: 120, shape: 'uniform' }, { W: 1200, xbar: 5, RA: 600, RB: 600 }),
       kase('triangular', { L: 6, w: 90, shape: 'triangular' }, { W: 270, xbar: 4, RA: 90, RB: 180 }),
@@ -175,5 +185,67 @@ export default [
       read: () => ({}),
     },
     cases: [kase('two', { layout: 'two' }, { n: 2 }), kase('three', { layout: 'three' }, { n: 1 })],
+  }),
+  problem({
+    ...U3, id: 'ch6.frame-aframe', ch: '6', lab: 'frame', src: 'Part 3 · frames', title: 'A-frame with a two-force member', kind: 'numeric', level: 3, topics: ['frames', 'two-force'],
+    vars: { P: range(100, 2000, 50, 'lb'), t: range(0.2, 0.9, 0.05, '') },
+    // Worked the way you would by hand: ΣM_A on the whole frame for Cy, then BC is a two-force
+    // member, so the force at C points along CB. The lab solves all six equations at once.
+    derive: ($) => {
+      const xD = 2 * $.t;
+      const Cy = ($.P * xD) / 4;
+      const Cx = -Cy * (2 / 3);
+      return { xD, yD: 3 * $.t, Cy, Cx, Ay: $.P - Cy, Ax: -Cx, B: Math.hypot(Cx, Cy) };
+    },
+    text: (T, $) => `An A-frame has legs AB and BC pinned together at the apex B(2, 3) ft, with pin supports at A(0, 0) and C(4, 0). A ${T.P} lb downward load acts on AB at D(${$.xD.toFixed(2)}, ${$.yD.toFixed(2)}) ft. Nothing else loads BC. Find the vertical reaction at C and the magnitude of the pin force at B.`,
+    parts: [
+      num('Cy', ($) => $.Cy, 'lb', { label: String.raw`$C_y$` }),
+      num('Ax', ($) => $.Ax, 'lb', { label: String.raw`$A_x$ (+ right)` }),
+      num('B', ($) => $.B, 'lb', { label: 'pin force at B' }),
+    ],
+    hints: [
+      'Whole frame first: ΣM about A involves only Cy and the load.',
+      'BC carries no load between its pins — it is a two-force member, so the force at C acts along CB.',
+    ],
+    steps: ($, f) => [
+      String.raw`$\sum M_A = 0:\; 4C_y - P\,x_D = 0 \Rightarrow C_y = ${texNum($.Cy)}$ lb`,
+      String.raw`BC is a two-force member along $(-2, 3)$, so $C_x = -\tfrac{2}{3}C_y = ${texNum($.Cx)}$ lb, and $A_x = -C_x = ${texNum($.Ax)}$ lb`,
+      String.raw`The pin force at B equals the force at C: $|B| = ${texNum($.B)}$ lb`,
+    ],
+    sim: {
+      scenario: 'aframe',
+      setup: (s, $) => void Object.assign(s, { P: $.P, t: $.t, Q: 0 }),
+      read: (c) => ({
+        Cy: c.frame.sol.values.Cy,
+        Ax: c.frame.sol.values.Ax,
+        B: Math.hypot(c.frame.sol.values.Bx, c.frame.sol.values.By),
+        '@worst member residual': [c.frame.sol.worstResidual, 0],
+      }),
+    },
+    cases: [kase('hand', { P: 600, t: 0.5 }, { Cy: 150, Ax: 100, B: 180.28 })],
+  }),
+  problem({
+    ...U3, id: 'ch6.pliers', ch: '6', lab: 'frame', src: 'Part 3 · machines', title: 'Grip of a pair of pliers', kind: 'numeric', level: 2, topics: ['machines'],
+    vars: { P: range(10, 200, 5, 'N'), b: range(1.5, 8, 0.5, 'in') },
+    derive: ($) => ({ N: $.P * $.b, C: $.P + $.P * $.b }),
+    text: (T) => `A pair of pliers pivots on a pin C. Each jaw grips a bolt 1 in from the pin; each handle is squeezed with ${T.P} N at ${T.b} in from the pin, on the other side. Find the gripping force on the bolt and the force the pin C carries.`,
+    parts: [
+      num('N', ($) => $.N, 'N', { label: 'grip on the bolt' }),
+      num('C', ($) => $.C, 'N', { label: 'force at pin C' }),
+    ],
+    hints: [
+      'Take one handle-and-jaw as a free body. Moments about C eliminate the pin force.',
+      'Then ΣFy on the same member gives the pin force: it carries both the hand force and the grip.',
+    ],
+    steps: ($, f) => [
+      String.raw`$\sum M_C = 0:\; N(1) = P\,b \Rightarrow N = ${texNum($.N)}$ N`,
+      String.raw`$\sum F_y = 0:\; C = P + N = ${texNum($.C)}$ N`,
+    ],
+    sim: {
+      scenario: 'pliers',
+      setup: (s, $) => void Object.assign(s, { P: $.P, b: $.b }),
+      read: (c) => ({ N: c.frame.sol.values.J1n, C: Math.hypot(c.frame.sol.values.Cx, c.frame.sol.values.Cy) }),
+    },
+    cases: [kase('hand', { P: 50, b: 3 }, { N: 150, C: 200 })],
   }),
 ];

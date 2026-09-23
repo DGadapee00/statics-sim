@@ -87,5 +87,6 @@ where the whole internet can read them.
   type. Vendoring the two fonts into `public/` would remove the dependency.
 - **Updating means rebuilding.** The hosted copy is a snapshot. New problems or labs reach
   the group only after another build and upload (or, on option 2, another push).
-- **Phones work** but the labs assume a pointer and a fair amount of screen. Tablet and up
-  is the honest floor.
+- **Phones work.** Below 720 px the panels collapse into one bottom sheet (Setup ⇄ Explain) and
+  the camera backs off to fit portrait. It is still a small window onto a 3D scene — a tablet or
+  laptop is the comfortable floor.

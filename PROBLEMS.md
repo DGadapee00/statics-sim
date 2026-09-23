@@ -21,6 +21,6 @@ here:
 | `bank/ch56.js` | 5 rigid bodies, 6 trusses |
 | `bank/ch7910.js` | 7 internal loads, 9 centroids, 10 moments of inertia |
 
-22 templates, sourced from the four problem decks. `npm test` confirms each worked case, resamples
+27 templates, sourced from the four problem decks. `npm test` confirms each worked case, resamples
 every template, and — where a problem drives a lab — compares the lab's own answer with the
 problem's.

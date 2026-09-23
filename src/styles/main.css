@@ -1179,3 +1179,123 @@ select:focus-visible {
     max-width: calc(100vw - 24px);
   }
 }
+
+/* ---------- Phones: one bottom sheet, swapped between Setup and Explain ---------- */
+
+.slide-only input[type='range'] {
+  width: 100%;
+}
+
+.sheet-toggle {
+  display: none;
+}
+
+.ptab {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+
+.ptab th,
+.ptab td {
+  padding: 2px 6px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ptab th {
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.ptab th:first-child,
+.ptab td:first-child {
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.ptab tr.sum td {
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .brand {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    min-width: 0;
+    max-width: none;
+    padding: 8px 10px;
+  }
+  .brand-text .subtitle {
+    display: none;
+  }
+  .toggles {
+    top: auto;
+    left: 8px;
+    right: auto;
+    bottom: calc(66px + 36vh + 8px);
+    padding: 4px;
+  }
+  .sheet-toggle {
+    display: block;
+    pointer-events: auto;
+    right: 8px;
+    bottom: calc(66px + 36vh + 8px);
+    padding: 7px 14px;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .sheet-toggle[aria-pressed='true'] {
+    color: var(--gold, #f0ac5f);
+  }
+  .controls {
+    top: auto;
+    bottom: 66px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 36vh;
+  }
+  body.sheet-explain .controls {
+    display: none;
+  }
+  body.sheet-explain .eq-panel {
+    display: block;
+    top: auto;
+    bottom: 66px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: 36vh;
+  }
+  .readout {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px 6px;
+    padding: 6px 8px;
+  }
+  .readout .cell {
+    padding-left: 6px;
+  }
+  .readout .label {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .readout .value {
+    font-size: 13px;
+  }
+  .hint-bar {
+    display: none;
+  }
+}

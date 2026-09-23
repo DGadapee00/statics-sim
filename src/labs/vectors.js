@@ -62,8 +62,6 @@ export default defineLab({
             <span>${text}</span>
             <div class="slider-row">
               <input type="range" id="${id}" min="${min}" max="${max}" step="1" value="${val}" />
-              <span class="mono val" id="${id}-val">${val}</span>
-              <input type="number" class="num" id="${id}-num" step="1" value="${val}" />
             </div>
           </label>`;
     return `

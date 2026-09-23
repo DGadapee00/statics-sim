@@ -112,16 +112,43 @@ controls.addEventListener('start', () => {
   camTween = null;
 });
 
+// Phones: one button swaps the bottom sheet between Setup and the equations + explainer.
+const sheetBtn = document.getElementById('btn-sheet');
+sheetBtn?.addEventListener('click', () => {
+  const on = document.body.classList.toggle('sheet-explain');
+  sheetBtn.setAttribute('aria-pressed', String(on));
+  sheetBtn.textContent = on ? 'Setup' : 'Explain';
+});
+
+/**
+ * Every lab frames its scene for a landscape window. In portrait the horizontal field of view
+ * shrinks with the aspect ratio, so back the camera off along its own line of sight to keep the
+ * width in frame.
+ */
+function fitForAspect(pos, target) {
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+  const k = Math.min(3, Math.max(1, 1.25 / aspect));
+  const out = target.clone().add(pos.clone().sub(target).multiplyScalar(k));
+  if (aspect < 0.8) {
+    // The open space on a phone is above centre, between the header and the bottom sheet: aim
+    // the view at it by looking at a point a little below the scene.
+    const H = 2 * out.distanceTo(target) * Math.tan((camera.fov * Math.PI) / 360);
+    return { pos: out.setY(out.y - 0.12 * H), target: target.clone().setY(target.y - 0.12 * H) };
+  }
+  return { pos: out, target };
+}
+
 function goCamera(lab) {
   // cameraFor(state) lets one lab frame different scenarios differently (particle orbit vs a wire).
   const cam = lab?.cameraFor?.(slice()) || lab?.camera;
   if (!cam) return;
+  const fit = fitForAspect(cam.pos, cam.target);
   camTween = {
     t: 0,
     fromPos: camera.position.clone(),
     fromTarget: controls.target.clone(),
-    toPos: cam.pos,
-    toTarget: cam.target,
+    toPos: fit.pos,
+    toTarget: fit.target,
   };
 }
 

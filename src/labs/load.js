@@ -3,6 +3,9 @@ const loaders = {
   particle: () => import('./particle.js'),
   moments: () => import('./moments.js'),
   truss: () => import('./truss.js'),
+  frame: () => import('./frame.js'),
+  beam: () => import('./beam.js'),
+  sections: () => import('./sections.js'),
 };
 
 const cache = new Map();

@@ -12,6 +12,7 @@ import {
   coupleMoment, resultantWrench, rigidBody2D, distributedLoad, uniformLoad, triangularLoad, solve3,
 } from './statics.js';
 import { solveTruss, memberForce, zeroForceMembers, sectionCheck, stateOf } from './truss.js';
+import { solveFrame, solveLinear } from './frames.js';
 import {
   internalAt, shearMomentDiagram, composite, centroidUnderCurve, centroidOfLine, rect, tri, semi,
   quarter, pappusArea, pappusVolume, parallelAxis, rectI, triI, circI, compositeI, IxUnderCurve,
@@ -300,6 +301,87 @@ console.log('\nMoments of inertia (Ch 10)');
 
   // Integration check on I_y of a rectangle sitting on the y axis.
   approx(IyUnderCurve(() => h, 0, w), (h * w ** 3) / 3, 1e-6, 'I_y about the edge is hb³/3 by integration');
+}
+
+console.log('\nCouples and fixed supports in internal loads (Ch 7)');
+{
+  // Cantilever fixed at x = 0, P down at the tip. The reactions come from rigidBody2D; the internal
+  // moment is then checked against the right-hand segment, which needs no reactions at all.
+  const L = 8;
+  const P = 250;
+  const r = rigidBody2D({
+    loads: [{ at: v(L, 0, 0), F: v(0, -P, 0) }],
+    unknowns: [{ at: v(0, 0, 0), dir: v(0, 1, 0) }, { at: v(0, 0, 0), dir: v(1, 0, 0) }, { couple: true }],
+  });
+  const setup = { reactions: [{ x: 0, Fy: r.reactions[0], M: r.reactions[2] }], loads: [{ x: L, Fy: -P }] };
+  approx(r.reactions[2], P * L, 1e-9, 'fixed support: the wall couple is +PL (counterclockwise)');
+  for (const x of [0.5, 3, 7.5]) approx(internalAt(x, setup).M, -P * (L - x), 1e-9, `cantilever M(${x}) = −P(L − x), from the right segment`);
+  approx(internalAt(3, setup).V, P, 1e-9, 'and V = +P all along');
+
+  // A counterclockwise couple on a simple beam: M jumps DOWN by M0, and closes to zero at B.
+  const M0 = 600;
+  const c = L / 3;
+  const s2 = rigidBody2D({
+    loads: [{ at: v(c, 0, 0), F: v(0, 0, 0), couple: v(0, 0, M0) }],
+    unknowns: [{ at: v(0, 0, 0), dir: v(0, 1, 0) }, { at: v(L, 0, 0), dir: v(0, 1, 0) }, { at: v(0, 0, 0), dir: v(1, 0, 0) }],
+  });
+  const beam = { reactions: [{ x: 0, Fy: s2.reactions[0] }, { x: L, Fy: s2.reactions[1] }], loads: [{ x: c, M: M0 }] };
+  approx(internalAt(c + 1e-9, beam).M - internalAt(c - 1e-9, beam).M, -M0, 1e-6, 'a counterclockwise couple drops M by M0');
+  // Right segment: M = Σ Fy(x − cut) + Σ counterclockwise couples, for everything right of the cut.
+  const xl = c - 1;
+  approx(internalAt(xl, beam).M, s2.reactions[1] * (L - xl) + M0, 1e-9, 'left of the couple, M agrees with the right segment');
+  approx(internalAt(L, beam).M, 0, 1e-9, 'and M closes to zero at the far support');
+}
+
+console.log('\nFrames and machines (Ch 6)');
+{
+  approx(solveLinear([[2, 1], [1, 3]], [3, 5])[1], 1.4, 1e-12, 'the linear solver on a 2×2 by hand');
+
+  // A-frame: legs AB and BC pinned at the apex B, pins to the ground at A and C, P on AB's midpoint.
+  const P = 600;
+  const aframe = solveFrame({
+    points: { A: [0, 0], B: [2, 3], C: [4, 0], D: [1, 1.5] },
+    bodies: { AB: ['A', 'D', 'B'], BC: ['B', 'C'] },
+    pins: [{ at: 'B', bodies: ['AB', 'BC'] }],
+    supports: [{ at: 'A', body: 'AB', kind: 'pin' }, { at: 'C', body: 'BC', kind: 'pin' }],
+    loads: [{ body: 'AB', at: 'D', F: [0, -P] }],
+  });
+  // Independent: ΣM_A on the whole frame gives Cy; BC carries no load so it is a two-force member,
+  // which fixes Cx from the direction of BC.
+  const Cy = (P * 1) / 4;
+  const Cx = -Cy * (2 / 3);
+  approx(aframe.values.Cy, Cy, 1e-9, 'A-frame: Cy from ΣM_A on the whole frame');
+  approx(aframe.values.Cx, Cx, 1e-9, 'Cx from BC being a two-force member');
+  approx(aframe.values.Ax, -Cx, 1e-9, 'Ax from ΣFx on the whole frame');
+  approx(aframe.values.Ay, P - Cy, 1e-9, 'Ay from ΣFy');
+  approx(aframe.values.Bx, Cx, 1e-9, "pin B on AB equals C's reaction, by BC's equilibrium");
+  approx(aframe.worstResidual, 0, 1e-9, 'every member closes');
+  ok(aframe.counts.equations === aframe.counts.unknowns, 'six equations, six unknowns');
+
+  // Wall bracket: boom AB on a pin at A, strut CB from a pin at C below. W at 3 ft along a 4 ft boom.
+  const W = 400;
+  const bracket = solveFrame({
+    points: { A: [0, 0], B: [4, 0], C: [0, -3], D: [3, 0] },
+    bodies: { AB: ['A', 'D', 'B'], CB: ['C', 'B'] },
+    pins: [{ at: 'B', bodies: ['AB', 'CB'] }],
+    supports: [{ at: 'A', body: 'AB', kind: 'pin' }, { at: 'C', body: 'CB', kind: 'pin' }],
+    loads: [{ body: 'AB', at: 'D', F: [0, -W] }],
+  });
+  // ΣM_A on the boom with the strut force along CB (3-4-5): 4·(3/5)F = 3W.
+  approx(Math.hypot(bracket.values.Cx, bracket.values.Cy), (3 * W) / (4 * 0.6), 1e-9, 'bracket: strut force from ΣM_A on the boom');
+
+  // Pliers: a machine, no supports. Handle force P at b = 3 from the pin, jaws at a = 1: grip = Pb/a.
+  const Ph = 50;
+  const pliers = solveFrame({
+    points: { J1: [-1, 0.2], J2: [-1, -0.2], C: [0, 0], H1: [3, -0.5], H2: [3, 0.5] },
+    bodies: { upper: ['J1', 'C', 'H1'], lower: ['J2', 'C', 'H2'], bolt: ['J1', 'J2'] },
+    pins: [{ at: 'C', bodies: ['upper', 'lower'] }],
+    contacts: [{ at: 'J1', bodies: ['upper', 'bolt'], dir: [0, 1] }, { at: 'J2', bodies: ['lower', 'bolt'], dir: [0, -1] }],
+    loads: [{ body: 'upper', at: 'H1', F: [0, Ph] }, { body: 'lower', at: 'H2', F: [0, -Ph] }],
+  });
+  approx(pliers.values.J1n, (Ph * 3) / 1, 1e-9, 'pliers: grip = P·b/a (lever rule about the pin)');
+  approx(pliers.values.J2n, pliers.values.J1n, 1e-9, 'both jaws grip equally — the bolt is in equilibrium');
+  approx(pliers.worstResidual, 0, 1e-9, 'a machine with no supports still closes (redundant equations)');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

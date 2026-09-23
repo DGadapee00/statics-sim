@@ -92,8 +92,6 @@ export default defineLab({
             <span>Load scale</span>
             <div class="slider-row">
               <input type="range" id="tr-scale" min="0" max="3" step="0.05" value="1" />
-              <span class="mono val" id="tr-scale-val">1.00 ×</span>
-              <input type="number" class="num" id="tr-scale-num" min="0" max="10" step="0.05" value="1" />
             </div>
           </label>
           <label class="check"><input type="checkbox" id="tr-zero" checked /> <span>mark zero-force members</span></label>
@@ -103,17 +101,9 @@ export default defineLab({
   },
   bind(api) {
     const $ = (id) => document.getElementById(id);
-    const s = $('tr-scale');
-    const n = $('tr-scale-num');
-    s.addEventListener('input', (e) => {
-      api.slice().scale = Number(e.target.value);
-      api.bump(false);
-    });
-    n.addEventListener('change', (e) => {
-      const val = Number(e.target.value);
-      if (!Number.isFinite(val) || val < 0) return;
-      api.slice().scale = val;
-      if (val > Number(s.max)) s.max = String(val);
+    // The HUD's typed-value box drives this range input too (and widens it), so one listener serves both.
+    $('tr-scale').addEventListener('input', (e) => {
+      api.slice().scale = Math.max(0, Number(e.target.value));
       api.bump(false);
     });
     $('tr-zero').addEventListener('change', (e) => {
