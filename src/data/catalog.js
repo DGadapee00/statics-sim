@@ -31,10 +31,10 @@ export const EXAMS = [
   {
     id: 'u4',
     n: 4,
-    title: 'Internal loads, centroids, MOI',
-    chapters: '7, 9–10',
+    title: 'Internal loads, friction, centroids, MOI',
+    chapters: '7–10',
     date: 'Ch 7–10',
-    labs: ['beam', 'sections'],
+    labs: ['beam', 'friction', 'sections'],
     coming: [],
   },
 ];
@@ -46,6 +46,7 @@ export const LAB_META = {
   truss: { id: 'truss', exam: 'u3', title: 'Truss' },
   frame: { id: 'frame', exam: 'u3', title: 'Frame' },
   beam: { id: 'beam', exam: 'u4', title: 'Beam' },
+  friction: { id: 'friction', exam: 'u4', title: 'Friction' },
   sections: { id: 'sections', exam: 'u4', title: 'Sections' },
 };
 
@@ -56,6 +57,7 @@ export const CHAPTER_TITLES = {
   5: 'Rigid-body equilibrium',
   6: 'Trusses, frames & machines',
   7: 'Internal loads',
+  8: 'Friction',
   9: 'Centroids',
   10: 'Moments of inertia',
 };

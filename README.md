@@ -53,8 +53,12 @@ The self-test uses the same idea. Nothing is checked against itself:
 - a cantilever's internal moment against the right-hand segment, which needs no reactions at all
 - the frame solver against a two-force-member argument (A-frame), `ΣM_A` on a boom (bracket), and
   the lever rule `N = Pb/a` for a pair of pliers — a machine with no supports
+- the method of sections (solved from the cut side alone) against the method of joints, and
+  against moments about the point where the other two cut members meet
+- friction: impending motion exactly at the angle of repose, the closed-form band of P against the
+  general equilibrium state, and belt friction `e^(μβ)` against integrating `dT = μT dθ`
 
-`npm test` runs 101 of these plus the problem-bank check.
+`npm test` runs 115 of these plus the problem-bank check.
 
 ## Labs
 
@@ -63,7 +67,7 @@ The self-test uses the same idea. Nothing is checked against itself:
 | 1 · Force vectors (Ch 2) | `#/u1/vectors` | Vectors |
 | 2 · Equilibrium & moments (Ch 3–4) | `#/u2/particle` | Particle, Moments |
 | 3 · Rigid bodies & trusses (Ch 5–6) | `#/u3/truss` | Truss, Frame |
-| 4 · Internal loads, centroids, MOI (Ch 7–10) | `#/u4/beam` | Beam, Sections |
+| 4 · Internal loads, friction, centroids, MOI (Ch 7–10) | `#/u4/beam` | Beam, Friction, Sections |
 
 - **Vectors** (`#/u1/vectors`) — two 3D forces and their resultant, with components, magnitudes and
   the coordinate direction angles. The panel shows cos²α + cos²β + cos²γ live, which is the cheapest
@@ -81,8 +85,11 @@ The self-test uses the same idea. Nothing is checked against itself:
 - **Truss** (`#/u3/truss`) — the method of joints solved as one linear system. Members are coloured
   by tension (blue) and compression (red) and labelled with their force; zero-force members are
   marked; supports, reactions and applied loads are drawn. The panel reports m + r vs 2j, every
-  reaction, and the worst joint residual. Four scenarios including a Pratt truss and a zero-force
-  case.
+  reaction, and the worst joint residual. Five scenarios including a Pratt truss and a zero-force
+  case. **Method of sections:** cut through three members and the removed side fades; the three cut
+  forces are drawn on the kept side, and each member's moment point — where the other two cut
+  members' lines cross — is ringed in gold. The panel gives each force by its one-unknown equation
+  beside the method-of-joints value.
 - **Frame** (`#/u3/frame`) — frames and machines, every member with its own three equations and
   Newton's third law at each pin. An **explode** slider pulls the assembly apart into one free body
   per member: the pin forces appear as equal and opposite pairs, and vanish again when it closes.
@@ -94,21 +101,34 @@ The self-test uses the same idea. Nothing is checked against itself:
   left segment becomes a free body with N, V and M drawn on the cut face; the panel checks M at the
   cut against `∫V dx` (plus any couple jumps) and finds `|M|_max` where V crosses zero. Simple,
   cantilever and overhanging beams; point, uniform, triangular loads and applied couples.
+- **Friction** (`#/u4/friction`) — Ch 8, always answering "is it moving?" first. A block on an
+  incline with the friction cone drawn: the contact force equilibrium needs must lie inside it, or
+  the block slides (and visibly does). The band of push P that holds it, the angle of repose,
+  tip-or-slip for a box pushed from the side, and belt friction around a post.
 - **Sections** (`#/u4/sections`) — centroids and moments of inertia by composite parts, with the
   exam table (A, x̃, ỹ, Ax̃, Aỹ — then Ī, d, Ad²) filled in live beside the shape. Holes are parts
   with negative area. In the inertia view the centroidal axis and each part's `d` are drawn, and
   the panel checks `I_base` against `Ī + Aȳ²`. L, T, I-beam, plate with a hole, and composites with
   a triangle and a semicircle.
 
+**Work it first** (button top right, or **W**) hides every answer in a lab — solved forces, diagrams,
+the live values and the explainer — while leaving the setup visible. Set up a scenario, work it by
+hand, then reveal and compare. It is the same veil an unsolved practice problem uses.
+
 On a phone the panels become one bottom sheet with an **Explain** button that swaps the setup for
 the equations, the live values and the explainer; the camera backs off to keep each lab in frame.
 
 ## Practice
 
-Press **P** for the problem bank: 27 generated problems across Ch 2–10, grouped by chapter, each
+Press **P** for the problem bank: 34 generated problems across Ch 2–10, grouped by chapter, each
 with fresh numbers every attempt. Problems that have a lab load their own setup into it, and the
-lab's answer is compared with the problem's — 3237 such comparisons run in `npm test`. Every
-chapter's problems now drive a lab except Pappus and the truss-determinacy question.
+lab's answer is compared with the problem's — 4213 such comparisons run in `npm test`. Every
+problem drives a lab except Pappus and the truss-determinacy question. The answers come from the
+hand method (symmetry, a well-chosen moment point, a closed form), never from the lab's own code,
+so each comparison is a genuine second method.
+
+Chapter 8 (friction) was not in the extracted problem decks; its lab and three problems are written
+from the chapter's standard cases so the course runs end to end. Skip it if your syllabus does.
 
 Numeric answers, multiple choice, and typed formulas with a live units check. Where a problem has
 both, the numeric boxes stay locked until the formula is right.

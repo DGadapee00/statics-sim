@@ -248,4 +248,65 @@ export default [
     },
     cases: [kase('hand', { P: 50, b: 3 }, { N: 150, C: 200 })],
   }),
+  problem({
+    ...U3, id: 'ch5.cantilever', ch: '5', lab: 'beam', src: 'Part 3 · fixed supports', title: 'Cantilever: reactions at the wall', kind: 'numeric', level: 2, topics: ['equilibrium', 'fixed-support'],
+    vars: { L: range(3, 16, 1, 'ft'), P: range(0, 1000, 50, 'lb'), w: range(0, 200, 10, 'lb/ft') },
+    derive: ($) => ({ Ay: $.P + $.w * $.L, MA: $.P * $.L + ($.w * $.L ** 2) / 2 }),
+    valid: ($) => $.P + $.w > 0,
+    text: (T) => `A ${T.L} ft cantilever is fixed into a wall at A and carries a uniform load of ${T.w} lb/ft along its length plus a ${T.P} lb downward load at its free end. Find the vertical reaction and the moment the wall exerts at A.`,
+    parts: [
+      num('Ay', ($) => $.Ay, 'lb', { label: String.raw`$A_y$` }),
+      num('MA', ($) => $.MA, 'lb·ft', { label: String.raw`$M_A$ (counterclockwise +)` }),
+    ],
+    hints: [
+      'A fixed support supplies three reactions: two forces and a couple. Draw all three.',
+      String.raw`Replace the uniform load by $wL$ at $L/2$, then $\sum M_A = 0$ gives the couple directly.`,
+    ],
+    steps: ($, f) => [
+      String.raw`$\sum F_y = 0:\; A_y = P + wL = ${texNum($.Ay)}$ lb`,
+      String.raw`$\sum M_A = 0:\; M_A = PL + wL\cdot\tfrac{L}{2} = ${texNum($.MA)}\ \text{lb}\cdot\text{ft}$`,
+    ],
+    sim: {
+      scenario: 'cantilever',
+      setup: (s, $) => void Object.assign(s, { L: $.L, P: $.P, a: $.L, dist: $.w ? 'uniform' : 'none', w: $.w, M0: 0, c: $.L / 2 }),
+      read: (c) => ({ Ay: c.beam.reactions[0].Fy, MA: c.beam.reactions[0].M }),
+    },
+    cases: [kase('hand', { L: 8, P: 250, w: 50 }, { Ay: 650, MA: 3600 })],
+  }),
+  problem({
+    ...U3, id: 'ch6.sections', ch: '6', lab: 'truss', src: 'Part 3 · 6.4–6.5', title: 'Method of sections on a Pratt truss', kind: 'numeric', level: 3, topics: ['trusses', 'method-of-sections'],
+    vars: { P1: range(100, 2000, 50, 'lb'), P2: range(100, 2000, 50, 'lb') },
+    // By hand: ΣM_A on the whole truss for A_y, then the section left of the cut:
+    // ΣM about E gives BC, ΣM about C gives EF, and ΣFy gives EC (its moment point is at infinity).
+    derive: ($) => {
+      const Ay = (2 * $.P1 + $.P2) / 3;
+      return { Ay, BC: Ay, EF: $.P1 - 2 * Ay, EC: Math.SQRT2 * (Ay - $.P1) };
+    },
+    text: (T) => `A Pratt truss has bottom joints A(0, 0), B(3, 0), C(6, 0), D(9, 0) and top joints E(3, 3), F(6, 3), in feet, with a pin at A and a roller at D. It carries ${T.P1} lb down at B and ${T.P2} lb down at C. Cut through BC, EC and EF and find the force in each (tension positive).`,
+    parts: [
+      num('BC', ($) => $.BC, 'lb', { label: 'BC' }),
+      num('EF', ($) => $.EF, 'lb', { label: 'EF' }),
+      num('EC', ($) => $.EC, 'lb', { label: 'EC' }),
+    ],
+    hints: [
+      String.raw`Reactions first: $\sum M_A = 0$ on the whole truss.`,
+      'Keep the left part (A, B, E). For each member, take moments where the other two cut members meet: E isolates BC, C isolates EF.',
+      String.raw`BC and EF are parallel, so EC has no moment point — use $\sum F_y$ on the section.`,
+    ],
+    steps: ($, f) => [
+      String.raw`$A_y = \tfrac{2P_1 + P_2}{3} = ${texNum($.Ay)}$ lb`,
+      String.raw`$\sum M_E:\; 3\,F_{BC} - 3A_y = 0 \Rightarrow F_{BC} = ${texNum($.BC)}$ lb`,
+      String.raw`$\sum M_C:\; -6A_y + 3P_1 - 3F_{EF} = 0 \Rightarrow F_{EF} = ${texNum($.EF)}$ lb`,
+      String.raw`$\sum F_y:\; A_y - P_1 - F_{EC}/\sqrt{2} = 0 \Rightarrow F_{EC} = ${texNum($.EC)}$ lb`,
+    ],
+    sim: {
+      scenario: 'pratt-uneven',
+      setup: (s, $) => void Object.assign(s, { loads: { B: [0, -$.P1], C: [0, -$.P2] }, scale: 1, section: true, cutIdx: 0 }),
+      read: (c) => {
+        const by = Object.fromEntries(c.truss.mos.cut.map((m) => [m.member, m.force]));
+        return { BC: by.BC, EF: by.EF, EC: by.EC, '@EC by joints': [memberForce(c.truss.sol, 'E', 'C'), by.EC] };
+      },
+    },
+    cases: [kase('hand', { P1: 900, P2: 300 }, { BC: 700, EF: -500, EC: -282.84 })],
+  }),
 ];

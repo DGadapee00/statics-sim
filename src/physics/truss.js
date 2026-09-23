@@ -11,6 +11,7 @@
  */
 
 import { v, sub, unit, mag } from './vectors.js';
+import { solve3 } from './statics.js';
 
 /**
  * @param joints  { A: {x, y}, B: {...}, … }
@@ -199,3 +200,87 @@ function gauss(M, r) {
 
 /** Length of a member, for drawing and for the weight problems. */
 export const memberLength = (joints, [p, q]) => mag(sub(joints[q], joints[p]));
+
+/**
+ * The method of sections, worked the way it is by hand and independently of the joint solver:
+ * whole-truss equilibrium for the reactions, then the kept side alone as one rigid body. That body
+ * has three equations, so the cut may cross at most three members of unknown force.
+ *
+ * For each cut member it also finds the "moment point" — where the other two cut members' lines
+ * meet. Summing moments there leaves that member as the only unknown, which is the trick the
+ * method is built on. When the other two are parallel there is no such point (it is at infinity)
+ * and ΣF perpendicular to them does the same job.
+ *
+ * Returns { cut: [{ member, inside, outside, u, force, point|null }], reactions, residual }.
+ */
+export function methodOfSections({ joints, members, loads = {}, supports = {} }, keep) {
+  const keepSet = new Set(keep);
+  const cut = members.filter(([p, q]) => keepSet.has(p) !== keepSet.has(q));
+  if (cut.length !== 3) return { ok: false, cut: cut.map(([p, q]) => ({ member: `${p}${q}` })), reason: `the cut crosses ${cut.length} members; a section needs exactly 3` };
+
+  // Reactions from the whole truss as one body: unknowns in slot order, ΣFx, ΣFy, ΣM about origin.
+  const slots = [];
+  for (const [j, kind] of Object.entries(supports)) {
+    if (kind === 'pin' || kind === 'rollerX') slots.push({ j, d: v(1, 0, 0) });
+    if (kind === 'pin' || kind === 'rollerY') slots.push({ j, d: v(0, 1, 0) });
+  }
+  if (slots.length !== 3) return { ok: false, cut: [], reason: 'needs three reaction components' };
+  let Fx = 0;
+  let Fy = 0;
+  let Mo = 0;
+  for (const [j, L] of Object.entries(loads)) {
+    Fx += L.x || 0;
+    Fy += L.y || 0;
+    Mo += joints[j].x * (L.y || 0) - joints[j].y * (L.x || 0);
+  }
+  const col = (P, d) => [d.x, d.y, P.x * d.y - P.y * d.x];
+  const cols = slots.map((s) => col(joints[s.j], s.d));
+  const R = solve3([[cols[0][0], cols[1][0], cols[2][0]], [cols[0][1], cols[1][1], cols[2][1]], [cols[0][2], cols[1][2], cols[2][2]]], [-Fx, -Fy, -Mo]);
+  const reactions = {};
+  slots.forEach((s, i) => {
+    const r = reactions[s.j] || (reactions[s.j] = { x: 0, y: 0 });
+    r.x += s.d.x * R[i];
+    r.y += s.d.y * R[i];
+  });
+
+  // The kept side: known forces are its loads and reactions.
+  let kx = 0;
+  let ky = 0;
+  let km = 0;
+  const add = (P, f) => {
+    kx += f.x || 0;
+    ky += f.y || 0;
+    km += P.x * (f.y || 0) - P.y * (f.x || 0);
+  };
+  for (const [j, L] of Object.entries(loads)) if (keepSet.has(j)) add(joints[j], L);
+  for (const [j, r] of Object.entries(reactions)) if (keepSet.has(j)) add(joints[j], r);
+  // Each cut member pulls its inside joint toward the outside one when in tension.
+  const parts = cut.map(([p, q]) => {
+    const inside = keepSet.has(p) ? p : q;
+    const outside = inside === p ? q : p;
+    return { member: `${p}${q}`, inside, outside, u: unit(sub(joints[outside], joints[inside])) };
+  });
+  const A = [0, 1, 2].map((row) => parts.map((c) => col(joints[c.inside], c.u)[row]));
+  const T = solve3(A, [-kx, -ky, -km]);
+  parts.forEach((c, i) => { c.force = T[i]; });
+
+  // Moment points: where the other two lines of action cross.
+  const cross2 = (a, b) => a.x * b.y - a.y * b.x;
+  parts.forEach((c, i) => {
+    const [m, n] = parts.filter((_, k) => k !== i);
+    const P1 = joints[m.inside];
+    const P2 = joints[n.inside];
+    const den = cross2(m.u, n.u);
+    if (Math.abs(den) < 1e-9) {
+      c.point = null;
+      return;
+    }
+    const s = cross2(sub(P2, P1), n.u) / den;
+    c.point = v(P1.x + m.u.x * s, P1.y + m.u.y * s, 0);
+  });
+  const resid = {
+    Fx: kx + parts.reduce((s, c) => s + c.u.x * c.force, 0),
+    Fy: ky + parts.reduce((s, c) => s + c.u.y * c.force, 0),
+  };
+  return { ok: true, cut: parts, reactions, residual: resid };
+}

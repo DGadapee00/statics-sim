@@ -306,11 +306,13 @@ export default defineLab({
     if (c.twoForce.length) rows.push(kv('two-force members', c.twoForce.join(', ')));
     const groups = {};
     for (const u of sol.unknowns) (groups[u.key.slice(0, -1)] ||= []).push(u);
+    // A pin's components are the force on the first member it joins; the other member feels the reverse.
     for (const [g, us] of Object.entries(groups)) {
       const vals = us.map((u) => `${u.label.replace(/_(\w+)/, '<sub>$1</sub>')} = ${sol.values[u.key].toFixed(1)}`).join(' · ');
       const kind = us[0].kind === 'support' ? 'support' : us[0].kind === 'contact' ? 'contact' : 'pin';
       const mag = us.length === 2 ? ` · |${g}| = ${Math.hypot(sol.values[us[0].key], sol.values[us[1].key]).toFixed(1)}` : '';
-      rows.push(kv(`${kind} ${g}`, qv('qV', `${vals}${mag}`)));
+      const on = kind === 'pin' ? ` (on ${(model.pins || []).find((p) => p.at === g)?.bodies[0]})` : '';
+      rows.push(kv(`${kind} ${g}${on}`, qv('qV', `${vals}${mag}`)));
     }
     rows.push(kv('worst member residual', qv(sol.worstResidual < 1e-6 ? 'qR' : 'qI', `${sol.worstResidual.toExponential(1)} ${uF}, ${uF}·${uL}`)));
     if (model.contacts) {
@@ -337,7 +339,7 @@ export default defineLab({
     const sup = (model.supports || []).map((s) => `${s.at}: ${Math.hypot(sol.values[`${s.at}x`], sol.values[`${s.at}y`]).toFixed(0)}`).join(' · ');
     return cells([
       ['pin B', `${B.toFixed(1)} ${uF}`, 'ok'],
-      ['$B_x$ · $B_y$ (on the first member)', `${sol.values.Bx.toFixed(1)} · ${sol.values.By.toFixed(1)}`, ''],
+      [`$B_x$ · $B_y$ on ${model.pins[0].bodies[0]}`, `${sol.values.Bx.toFixed(1)} · ${sol.values.By.toFixed(1)}`, ''],
       ['supports', sup, ''],
       ['ΣF, ΣM close to', sol.worstResidual.toExponential(1), sol.worstResidual < 1e-6 ? 'ok' : 'bad'],
     ]);

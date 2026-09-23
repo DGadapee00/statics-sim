@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { defineLab } from './define.js';
 import { M, fatLine, fatSegments, Arrow, markAnswer, setFatSegments, segmentCapacity } from '../scene/manim.js';
-import { solveTruss, zeroForceMembers, memberForce, stateOf, sectionCheck } from '../physics/truss.js';
+import { solveTruss, zeroForceMembers, memberForce, stateOf, sectionCheck, methodOfSections } from '../physics/truss.js';
 import { v, sub, mag } from '../physics/vectors.js';
 import { kv, cells, qv, eq } from '../ui/shared.js';
 
@@ -32,6 +32,10 @@ const SCENARIOS = [
     members: [['A', 'B'], ['B', 'C'], ['A', 'E'], ['E', 'D'], ['D', 'C'], ['E', 'B'], ['D', 'B']],
     loads: { E: [0, -800], D: [0, -400] },
     supports: { A: 'pin', C: 'rollerY' },
+    cuts: [
+      { name: 'through ED, DB, BC', keep: ['A', 'B', 'E'] },
+      { name: 'through AB, EB, ED', keep: ['A', 'E'] },
+    ],
   },
   {
     id: 'zero',
@@ -48,10 +52,30 @@ const SCENARIOS = [
     members: [['A', 'B'], ['B', 'C'], ['C', 'D'], ['A', 'E'], ['E', 'F'], ['F', 'D'], ['E', 'B'], ['F', 'C'], ['E', 'C']],
     loads: { B: [0, -600], C: [0, -600] },
     supports: { A: 'pin', D: 'rollerY' },
+    cuts: [
+      { name: 'through BC, EC, EF (second panel)', keep: ['A', 'B', 'E'] },
+      { name: 'through CD, FC, EF (third panel)', keep: ['A', 'B', 'C', 'E'] },
+      { name: 'through AB, EB, EF (first panel)', keep: ['A', 'E'] },
+    ],
+  },
+  {
+    id: 'pratt-uneven',
+    name: 'Pratt truss · uneven loads (method of sections)',
+    joints: { A: [0, 0], B: [3, 0], C: [6, 0], D: [9, 0], E: [3, 3], F: [6, 3] },
+    members: [['A', 'B'], ['B', 'C'], ['C', 'D'], ['A', 'E'], ['E', 'F'], ['F', 'D'], ['E', 'B'], ['F', 'C'], ['E', 'C']],
+    loads: { B: [0, -900], C: [0, -300] },
+    supports: { A: 'pin', D: 'rollerY' },
+    section: true,
+    cuts: [
+      { name: 'through BC, EC, EF (second panel)', keep: ['A', 'B', 'E'] },
+      { name: 'through CD, FC, EF (third panel)', keep: ['A', 'B', 'C', 'E'] },
+      { name: 'through AB, EB, EF (first panel)', keep: ['A', 'E'] },
+    ],
   },
 ];
 
 const toVec = (p) => v(p[0], p[1], 0);
+const cutsFor = (state) => SCENARIOS.find((sc) => sc.id === state.scenarioId)?.cuts || [];
 const jointsOf = (sc) => Object.fromEntries(Object.entries(sc.joints).map(([k, p]) => [k, toVec(p)]));
 const loadsOf = (sc) => Object.fromEntries(Object.entries(sc.loads || {}).map(([k, p]) => [k, { x: p[0], y: p[1] }]));
 
@@ -72,7 +96,7 @@ export default defineLab({
   keys: { r: 'reset', R: 'reset' },
   scenarios: SCENARIOS,
   defaultState() {
-    return { scenarioId: 'three', scale: 1, showZero: true, selected: null };
+    return { scenarioId: 'three', scale: 1, showZero: true, selected: null, section: false, cutIdx: 0 };
   },
   applyScenario(id, state) {
     const sc = SCENARIOS.find((s) => s.id === id) || SCENARIOS[0];
@@ -83,6 +107,8 @@ export default defineLab({
       loads: JSON.parse(JSON.stringify(sc.loads || {})),
       supports: { ...sc.supports },
       scale: 1,
+      section: !!sc.section,
+      cutIdx: 0,
     });
   },
   controls() {
@@ -95,6 +121,10 @@ export default defineLab({
             </div>
           </label>
           <label class="check"><input type="checkbox" id="tr-zero" checked /> <span>mark zero-force members</span></label>
+          <div id="tr-secblock">
+            <label class="check"><input type="checkbox" id="tr-section" /> <span>method of sections — cut the truss</span></label>
+            <label class="field" id="tr-cutfield"><span>Cut</span><select id="tr-cut"></select></label>
+          </div>
           <div id="tr-members" class="lab-list"></div>
           <p class="tiny">Tension is positive and drawn in blue; compression is red. The residual row is the check: it is ΣF at the worst joint, recomputed from the member forces. If it is not zero the truss is not in equilibrium.</p>
         </div>`;
@@ -108,6 +138,14 @@ export default defineLab({
     });
     $('tr-zero').addEventListener('change', (e) => {
       api.slice().showZero = e.target.checked;
+      api.bump(false);
+    });
+    $('tr-section').addEventListener('change', (e) => {
+      api.slice().section = e.target.checked;
+      api.bump(false);
+    });
+    $('tr-cut').addEventListener('change', (e) => {
+      api.slice().cutIdx = Number(e.target.value);
       api.bump(false);
     });
   },
@@ -124,6 +162,22 @@ export default defineLab({
     if (n && document.activeElement !== n) n.value = String(state.scale);
     const z = $('tr-zero');
     if (z) z.checked = !!state.showZero;
+    const cuts = cutsFor(state);
+    const block = $('tr-secblock');
+    if (block) block.style.display = cuts.length ? '' : 'none';
+    const sec = $('tr-section');
+    if (sec) sec.checked = !!state.section;
+    const sel = $('tr-cut');
+    if (sel) {
+      const html = cuts.map((c, i) => `<option value="${i}">${c.name}</option>`).join('');
+      if (sel.dataset.html !== html) {
+        sel.innerHTML = html;
+        sel.dataset.html = html;
+      }
+      sel.value = String(Math.min(state.cutIdx, Math.max(0, cuts.length - 1)));
+    }
+    const f = $('tr-cutfield');
+    if (f) f.style.display = state.section ? '' : 'none';
   },
   init(ctx) {
     const group = new THREE.Group();
@@ -139,8 +193,12 @@ export default defineLab({
     const labels = new THREE.Group();
     group.add(labels);
     markAnswer(labels);
+    const cutLine = fatSegments(segmentCapacity(1), { color: M.gold, width: 2, dashed: true });
+    const cutGroup = new THREE.Group();
+    markAnswer(cutGroup);
+    group.add(cutLine, cutGroup);
     group.visible = false;
-    return { group, membersLine, zeroLine, jointDots, arrows, labels };
+    return { group, membersLine, zeroLine, jointDots, arrows, labels, cutLine, cutGroup };
   },
   enter(ctx, handle) {
     handle.group.visible = true;
@@ -165,7 +223,12 @@ export default defineLab({
       const cut = state.members.filter(([p, q]) => (p === names[0]) !== (q === names[0]));
       if (cut.length) section = sectionCheck(input, keep, cut, joints[names[1]]);
     }
+    const cuts = cutsFor(state);
+    const cutDef = state.section && cuts.length ? cuts[Math.min(state.cutIdx, cuts.length - 1)] : null;
+    const mos = cutDef ? methodOfSections(input, cutDef.keep) : null;
     computed.truss = {
+      mos,
+      keep: cutDef ? new Set(cutDef.keep) : null,
       sol,
       joints,
       loads,
@@ -208,6 +271,11 @@ export default defineLab({
       if (st === 'tension') tint.setHex(M.blue).lerp(new THREE.Color(M.white), 1 - t);
       else if (st === 'compression') tint.setHex(M.red).lerp(new THREE.Color(M.white), 1 - t);
       else tint.setHex(M.greyDark);
+      // With a section taken, the removed side fades: the kept side is the free body.
+      if (c.keep && !(c.keep.has(p) && c.keep.has(q))) {
+        const isCut = c.keep.has(p) !== c.keep.has(q);
+        tint.lerp(new THREE.Color(M.bg), isCut ? 0.35 : 0.8);
+      }
       push(joints[p], joints[q], tint);
     }
     setFatSegments(h.membersLine, seg);
@@ -276,6 +344,45 @@ export default defineLab({
       h.labels.add(ml);
     }
 
+    // Method of sections: the cut, the three member forces on the kept side, and moment points.
+    while (h.cutGroup.children.length) h.cutGroup.remove(h.cutGroup.children[0]);
+    let cutSeg = [];
+    if (c.mos?.ok) {
+      const mids = c.mos.cut.map((m) => ({ x: (joints[m.inside].x + joints[m.outside].x) / 2, y: (joints[m.inside].y + joints[m.outside].y) / 2 }));
+      mids.sort((a, b) => a.y - b.y);
+      const lo = mids[0];
+      const hi = mids[mids.length - 1];
+      const d = { x: hi.x - lo.x, y: hi.y - lo.y };
+      const L = Math.hypot(d.x, d.y) || 1;
+      const ext = 0.8;
+      cutSeg = [(lo.x - (d.x / L) * ext) * U, (lo.y - (d.y / L) * ext) * U, 0.04, (hi.x + (d.x / L) * ext) * U, (hi.y + (d.y / L) * ext) * U, 0.04];
+      const peak = Math.max(1e-9, ...c.mos.cut.map((m) => Math.abs(m.force)));
+      c.mos.cut.forEach((m, i) => {
+        const P = joints[m.inside];
+        const O = joints[m.outside];
+        // Tension pulls the kept joint toward the cut; draw it at the cut, pointing along the member.
+        const at = new THREE.Vector3((P.x + (O.x - P.x) * 0.5) * U, (P.y + (O.y - P.y) * 0.5) * U, 0.05);
+        // Tension: an arrow from the cut, pointing away from the kept side. Compression: pushing in.
+        const dir = new THREE.Vector3(m.u.x, m.u.y, 0).multiplyScalar(m.force >= 0 ? 1 : -1);
+        const len = 0.35 + 0.6 * (Math.abs(m.force) / peak);
+        const start = m.force >= 0 ? at.clone() : at.clone().addScaledVector(dir, -len);
+        h.cutGroup.add(new Arrow(dir, start, len, m.force >= 0 ? M.blue : M.red, 0.2, 0.15, 0.03));
+        const tag = label(`<span class="mono">${m.member}</span>`);
+        tag.position.copy(at).add(new THREE.Vector3(0.3, -0.28, 0));
+        h.cutGroup.add(tag);
+        if (m.point) {
+          const pt = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.16, 24), new THREE.MeshBasicMaterial({ color: M.gold, toneMapped: false }));
+          pt.position.set(m.point.x * U, m.point.y * U, 0.06);
+          h.cutGroup.add(pt);
+          const pl = label(`<span class="tiny">ΣM here → ${m.member}</span>`);
+          pl.position.set(m.point.x * U, m.point.y * U - 0.3 - i * 0.2, 0);
+          h.cutGroup.add(pl);
+        }
+      });
+    }
+    setFatSegments(h.cutLine, cutSeg);
+    h.cutLine.computeLineDistances();
+
     ctx.grid.visible = false;
   },
   law: () => [
@@ -295,7 +402,15 @@ export default defineLab({
       rows.push(kv(`reaction at ${j}`, qv('qV', `(${R.x.toFixed(0)}, ${R.y.toFixed(0)}) lb`)));
     }
     rows.push(kv('worst joint residual', qv(sol.worstResidual < 1e-6 ? 'qR' : 'qI', `${sol.worstResidual.toExponential(1)} lb`)));
-    if (c.section) rows.push(kv('section cut ΣM', `${c.section.sumM.toExponential(1)} lb·ft`));
+    if (c.section && !c.mos) rows.push(kv('section cut ΣM', `${c.section.sumM.toExponential(1)} lb·ft`));
+    if (c.mos?.ok) {
+      for (const m of c.mos.cut) {
+        const how = m.point ? `ΣM about (${m.point.x.toFixed(1)}, ${m.point.y.toFixed(1)})` : 'ΣF ⟂ the other two';
+        const joint = memberForce(sol, m.member[0], m.member[1]);
+        rows.push(kv(`${m.member} by ${how}`, qv(Math.abs(joint - m.force) < 1e-6 * Math.max(1, Math.abs(joint)) ? 'qR' : 'qI', `${m.force.toFixed(1)} lb ${stateOf(m.force) === 'tension' ? '(T)' : stateOf(m.force) === 'compression' ? '(C)' : ''}`)));
+      }
+      rows.push(kv('joints method gives', c.mos.cut.map((m) => `${m.member} ${memberForce(sol, m.member[0], m.member[1]).toFixed(1)}`).join(' · ')));
+    } else if (c.mos && !c.mos.ok) rows.push(kv('section', c.mos.reason));
     return rows.join('');
   },
   readout(state, computed) {
@@ -315,6 +430,21 @@ export default defineLab({
   coach(state, computed) {
     const c = computed.truss;
     if (!c) return { title: '', body: '' };
+    if (c.mos?.ok) {
+      const byM = c.mos.cut.filter((m) => m.point).map((m) => m.member);
+      const byF = c.mos.cut.filter((m) => !m.point).map((m) => m.member);
+      return {
+        title: 'Cut through three members, then one equation per member',
+        body: [
+          String.raw`The method of joints walks the whole truss to reach a member in the middle. The method of sections goes straight there: cut through at most three members, and keep one side as a single rigid body — three equations, three unknowns.`,
+          String.raw`The trick is where you take moments. The gold rings are where two of the cut members' lines cross; summing moments about that point removes both, and leaves the third alone.${byM.length ? ` Here that works for ${byM.join(', ')}.` : ''}`,
+          byF.length
+            ? String.raw`${byF.join(', ')} has no such point — the other two members are parallel and meet only at infinity — so use $\sum F$ perpendicular to them instead ($\sum F_y$ here).`
+            : 'Every cut member here has a finite moment point.',
+          'The panel shows each answer next to the method-of-joints value for the same member. They agree — two methods, one truss.',
+        ],
+      };
+    }
     if (c.zero.length && state.showZero) {
       return {
         title: `${c.zero.length} zero-force member${c.zero.length === 1 ? '' : 's'} here`,

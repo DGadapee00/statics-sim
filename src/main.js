@@ -190,9 +190,36 @@ function toggleSweep() {
   app.dirty = true;
 }
 
+/**
+ * Answers can be hidden two ways: by an unsolved practice problem, or by the student choosing to
+ * work a lab setup by hand first. Either one hides the answer layer in the scene and the panels
+ * that give numbers away; the setup (geometry, loads, sliders, the law) stays visible.
+ */
+let practiceBlind = false;
+let workFirst = false;
+function applyBlind() {
+  if (practiceBlind || workFirst) camera.layers.disable(ANSWER_LAYER);
+  else camera.layers.enable(ANSWER_LAYER);
+  document.body.classList.toggle('work-first', workFirst);
+  const b = document.getElementById('btn-work-first');
+  if (b) {
+    b.setAttribute('aria-pressed', String(workFirst));
+    b.textContent = workFirst ? 'Reveal answers' : 'Work it first';
+  }
+}
+function toggleWorkFirst() {
+  workFirst = !workFirst;
+  applyBlind();
+}
+document.getElementById('btn-work-first')?.addEventListener('click', toggleWorkFirst);
+
 function handleKey(e) {
   const lab = app.lab;
   if (!lab) return;
+  if (e.key === 'w' || e.key === 'W') {
+    toggleWorkFirst();
+    return;
+  }
   const action = lab.keys[e.key];
   if (!action) return;
   if (action === 'sweep') {
@@ -344,8 +371,8 @@ practice = createPractice({
   },
   /** Blind mode: hide answer arrows (the veil in problems.js handles the text). */
   setSceneBlind(on) {
-    if (on) camera.layers.disable(ANSWER_LAYER);
-    else camera.layers.enable(ANSWER_LAYER);
+    practiceBlind = on;
+    applyBlind();
   },
   labId: () => app.labId,
   examId: () => app.examId,

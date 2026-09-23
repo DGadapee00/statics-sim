@@ -5,6 +5,7 @@ const loaders = {
   truss: () => import('./truss.js'),
   frame: () => import('./frame.js'),
   beam: () => import('./beam.js'),
+  friction: () => import('./friction.js'),
   sections: () => import('./sections.js'),
 };
 

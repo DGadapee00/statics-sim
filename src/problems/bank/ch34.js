@@ -185,4 +185,56 @@ export default [
     sim: { scenario: 'couple', read: () => ({}) },
     cases: [kase('point', { ask: 'point' }, { ans: 'same' }), kase('net', { ask: 'net' }, { ans: 'zero' })],
   }),
+  problem({
+    ...U2, id: 'ch3.three-cables', ch: '3', lab: 'particle', src: 'Part 2 · 3.10–3.13', title: 'A ring on three cables in 3D', kind: 'numeric', level: 3, topics: ['equilibrium', '3d'],
+    vars: { W: range(100, 1500, 50, 'lb'), h: range(2, 10, 0.5, 'ft') },
+    // By hand: AC and AD are mirror images, so they carry the same T. ΣFx then ties T_AB to T,
+    // and ΣFz fixes T — no 3×3 solve needed.
+    derive: ($) => {
+      const LA = Math.hypot(3, $.h);
+      const LB = Math.hypot(2, 3, $.h);
+      return { LA, LB, TAB: (2 * $.W * LA) / (5 * $.h), T: (3 * $.W * LB) / (10 * $.h) };
+    },
+    text: (T) => `A ${T.W} lb weight hangs from a ring at the origin. Three cables run up to anchors B(3, 0, ${T.h}), C(−2, 3, ${T.h}) and D(−2, −3, ${T.h}) ft (z up). Find the tension in cable AB and in cable AC.`,
+    parts: [
+      num('TAB', ($) => $.TAB, 'lb', { label: String.raw`$T_{AB}$` }),
+      num('TAC', ($) => $.T, 'lb', { label: String.raw`$T_{AC}$` }),
+    ],
+    hints: [
+      String.raw`Write each tension as $T\hat{u}$ with $\hat{u}$ from the ring toward its anchor.`,
+      'Look for symmetry before solving: C and D are mirror images across the xz-plane, so T_AC = T_AD. That leaves two unknowns.',
+    ],
+    steps: ($, f) => [
+      String.raw`$|r_{AB}| = ${texNum($.LA)}$ ft, $|r_{AC}| = |r_{AD}| = ${texNum($.LB)}$ ft`,
+      String.raw`$\sum F_x:\; T_{AB}\frac{3}{|r_{AB}|} = 2\,T\frac{2}{|r_{AC}|}$; $\;\sum F_z:\; h\left(\frac{T_{AB}}{|r_{AB}|} + \frac{2T}{|r_{AC}|}\right) = W$`,
+      String.raw`$T_{AB} = ${texNum($.TAB)}$ lb, $T_{AC} = T_{AD} = ${texNum($.T)}$ lb`,
+    ],
+    sim: {
+      scenario: 'three',
+      setup: (s, $) => void Object.assign(s, { W: $.W, h: $.h }),
+      read: (c) => ({ TAB: c.particle.members[0].T, TAC: c.particle.members[1].T, '@T_AC = T_AD': [c.particle.members[2].T, c.particle.members[1].T] }),
+    },
+    cases: [kase('hand', { W: 600, h: 4 }, { TAB: 300, TAC: 242.33 })],
+  }),
+  problem({
+    ...U2, id: 'ch4.couple-moment', ch: '4', lab: 'moments', src: 'Part 2 · couples', title: 'Moment of a couple, about any point', kind: 'numeric', level: 2, topics: ['moments', 'couples'],
+    vars: { F: range(20, 400, 10, 'N'), th: range(10, 170, 10, '°'), px: range(-4, 4, 0.5, 'm'), py: range(-4, 4, 0.5, 'm') },
+    derive: ($) => ({ M: -3 * $.F * Math.sin($.th * DEG) }),
+    text: (T) => `A force of ${T.F} N at ${T.th}° from the +x axis acts at A(−1.5, 0) m, and an equal and opposite force acts at B(1.5, 0) m. Find the resultant moment of the pair about the point P(${T.px}, ${T.py}) m, counterclockwise positive.`,
+    parts: [num('M', ($) => $.M, 'N·m', { label: String.raw`$M_P$`, abs: 0.05 })],
+    hints: [
+      'The two forces are a couple. What does that tell you about where P is?',
+      String.raw`$M = \vec{r}_{BA}\times\vec{F}$, with $\vec{F}$ the force at A — P never enters.`,
+    ],
+    steps: ($, f) => [
+      String.raw`A couple has the same moment about every point, so P is a distraction.`,
+      String.raw`$M = (x_A - x_B)F_y = -3F\sin\theta = ${texNum($.M)}\ \text{N}\cdot\text{m}$`,
+    ],
+    sim: {
+      scenario: 'couple',
+      setup: (s, $) => void Object.assign(s, { F: $.F, th: $.th, px: $.px, py: $.py }),
+      read: (c) => ({ M: c.mom.Mz, '@same as r_BA × F': [c.mom.Mcouple, c.mom.Mz] }),
+    },
+    cases: [kase('hand', { F: 80, th: 90, px: 0, py: 2 }, { M: -240 })],
+  }),
 ];

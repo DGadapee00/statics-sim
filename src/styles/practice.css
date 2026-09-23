@@ -753,8 +753,30 @@ body.problem-blind .problems {
 body.problem-blind #eq-live,
 body.problem-blind #insight,
 body.problem-blind #mini-plot,
-body.problem-blind #readout {
+body.problem-blind #readout,
+body.work-first #readout {
   visibility: hidden;
+}
+
+/* Work it first: the live values and the explainer collapse, and the panel says why. */
+body.work-first #eq-live,
+body.work-first #insight,
+body.work-first #mini-plot {
+  display: none;
+}
+
+body.work-first #eq-panel::after {
+  content: 'Answers hidden. Work it by hand from the setup, then press Reveal answers (W) to check.';
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin-top: 10px;
+}
+
+body.work-first #btn-work-first {
+  color: var(--gold, #f0ac5f);
+  border-color: currentColor;
 }
 
 body.problem-blind .veiled,

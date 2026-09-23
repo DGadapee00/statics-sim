@@ -11,7 +11,8 @@ import {
   springForce, particleEq2D, particleEq3D, momentAbout, moment2D, momentArm, momentAboutAxis,
   coupleMoment, resultantWrench, rigidBody2D, distributedLoad, uniformLoad, triangularLoad, solve3,
 } from './statics.js';
-import { solveTruss, memberForce, zeroForceMembers, sectionCheck, stateOf } from './truss.js';
+import { solveTruss, memberForce, zeroForceMembers, sectionCheck, stateOf, methodOfSections } from './truss.js';
+import { inclineState, inclineRange, tipOrSlip, beltTension } from './friction.js';
 import { solveFrame, solveLinear } from './frames.js';
 import {
   internalAt, shearMomentDiagram, composite, centroidUnderCurve, centroidOfLine, rect, tri, semi,
@@ -382,6 +383,61 @@ console.log('\nFrames and machines (Ch 6)');
   approx(pliers.values.J1n, (Ph * 3) / 1, 1e-9, 'pliers: grip = P·b/a (lever rule about the pin)');
   approx(pliers.values.J2n, pliers.values.J1n, 1e-9, 'both jaws grip equally — the bolt is in equilibrium');
   approx(pliers.worstResidual, 0, 1e-9, 'a machine with no supports still closes (redundant equations)');
+}
+
+console.log('\nMethod of sections (Ch 6)');
+{
+  // Pratt truss, unequal panel loads. The section solver never calls the joint solver, so the two
+  // agreeing is a real check; the hand result for BC (ΣM about E) is a third.
+  const P1 = 900;
+  const P2 = 300;
+  const pratt = {
+    joints: { A: v(0, 0), B: v(3, 0), C: v(6, 0), D: v(9, 0), E: v(3, 3), F: v(6, 3) },
+    members: [['A', 'B'], ['B', 'C'], ['C', 'D'], ['A', 'E'], ['E', 'F'], ['F', 'D'], ['E', 'B'], ['F', 'C'], ['E', 'C']],
+    loads: { B: { x: 0, y: -P1 }, C: { x: 0, y: -P2 } },
+    supports: { A: 'pin', D: 'rollerY' },
+  };
+  const joints = solveTruss(pratt);
+  const cut = methodOfSections(pratt, ['A', 'B', 'E']);
+  const f = Object.fromEntries(cut.cut.map((c) => [c.member, c.force]));
+  approx(f.BC, memberForce(joints, 'B', 'C'), 1e-9, 'section BC agrees with the method of joints');
+  approx(f.EF, memberForce(joints, 'E', 'F'), 1e-9, 'section EF agrees');
+  approx(f.EC, memberForce(joints, 'E', 'C'), 1e-9, 'section EC agrees');
+  const Ay = (2 * P1 + P2) / 3;
+  approx(f.BC, Ay, 1e-9, 'BC by hand: ΣM about E gives BC = A_y');
+  const bcPoint = cut.cut.find((c) => c.member === 'BC').point;
+  approx(bcPoint.x, 3, 1e-9, "BC's moment point is E, where EF and EC meet");
+  ok(cut.cut.find((c) => c.member === 'EC').point === null, "EC's moment point is at infinity (BC ∥ EF): use ΣFy");
+}
+
+console.log('\nFriction (Ch 8)');
+{
+  const W = 100;
+  const mus = 0.4;
+  // With no push, the block is on the verge of slipping exactly at the angle of repose.
+  const repose = Math.atan(mus) / DEG;
+  ok(inclineState({ W, theta: repose, mus, muk: 0.3 }).regime === 'impending', 'at θ = atan μs the block is impending');
+  ok(inclineState({ W, theta: repose - 2, mus, muk: 0.3 }).regime === 'static', 'just below it, it holds');
+  ok(inclineState({ W, theta: repose + 2, mus, muk: 0.3 }).regime === 'slides down', 'just above it, it slides');
+
+  // The closed-form band of P against the general equilibrium state at its two ends.
+  const r = inclineRange({ W, theta: 35, mus, phi: 15 });
+  const top = inclineState({ W, theta: 35, mus, muk: 0.3, P: r.Ppush, phi: 15 });
+  approx(-top.need, top.Fmax, 1e-9, 'P_push: friction needed down the slope equals μsN');
+  const bottom = inclineState({ W, theta: 35, mus, muk: 0.3, P: r.Phold, phi: 15 });
+  approx(bottom.need, bottom.Fmax, 1e-9, 'P_hold: friction needed up the slope equals μsN');
+
+  // Tip or slip: at the tipping load the normal force has moved exactly to the corner.
+  const t = tipOrSlip({ W: 200, b: 1, hp: 2, mus: 0.5 });
+  approx(tipOrSlip({ W: 200, b: 1, hp: 2, mus: 0.5, P: t.Ptip }).x, 0.5, 1e-12, 'tipping: N reaches the corner at P·h = W·b/2');
+  ok(t.first === 'tip', 'a tall box pushed high tips before it slides');
+
+  // Belt friction against integrating dT/dθ = μT numerically.
+  let T = 50;
+  const n = 200000;
+  const beta = 200 * DEG;
+  for (let i = 0; i < n; i++) T += 0.3 * T * (beta / n);
+  approx(beltTension(50, 0.3, 200), T, 1e-4, 'T2 = T1·e^(μβ) matches integrating dT = μT dθ');
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);

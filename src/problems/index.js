@@ -6,8 +6,9 @@ import ch2 from './bank/ch2.js';
 import ch34 from './bank/ch34.js';
 import ch56 from './bank/ch56.js';
 import ch7910 from './bank/ch7910.js';
+import ch8 from './bank/ch8.js';
 
-export const PROBLEMS = [...ch2, ...ch34, ...ch56, ...ch7910];
+export const PROBLEMS = [...ch2, ...ch34, ...ch56, ...ch7910, ...ch8];
 
 const byIdMap = new Map(PROBLEMS.map((p) => [p.id, p]));
 
@@ -16,7 +17,7 @@ export const problemsForExam = (examId) => PROBLEMS.filter((p) => p.exam === exa
 export const problemsForLab = (labId) => PROBLEMS.filter((p) => p.lab === labId);
 
 /** Chapters in course order, for grouping in the UI. */
-export const CHAPTER_ORDER = ['2', '3', '4', '5', '6', '7', '9', '10'];
+export const CHAPTER_ORDER = ['2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 export const CHAPTER_TITLES = {
   2: 'Force vectors',
@@ -25,6 +26,7 @@ export const CHAPTER_TITLES = {
   5: 'Rigid-body equilibrium',
   6: 'Trusses, frames & machines',
   7: 'Internal loads',
+  8: 'Friction',
   9: 'Centroids',
   10: 'Moments of inertia',
 };
