@@ -58,13 +58,23 @@ The self-test uses the same idea. Nothing is checked against itself:
 | Unit | Hash | Labs |
 |---|---|---|
 | 1 · Force vectors (Ch 2) | `#/u1/vectors` | Vectors |
-| 2 · Equilibrium & moments (Ch 3–4) | `#/u2` | *coming* |
+| 2 · Equilibrium & moments (Ch 3–4) | `#/u2/particle` | Particle, Moments |
 | 3 · Rigid bodies & trusses (Ch 5–6) | `#/u3/truss` | Truss |
 | 4 · Internal loads, centroids, MOI (Ch 7–10) | `#/u4` | *coming* |
 
 - **Vectors** (`#/u1/vectors`) — two 3D forces and their resultant, with components, magnitudes and
   the coordinate direction angles. The panel shows cos²α + cos²β + cos²γ live, which is the cheapest
   error check in Chapter 2.
+- **Particle** (`#/u2/particle`) — a ring on two cables, a spring with a horizontal cable, and three
+  cables in 3D. The unknown tensions are solved from ΣF = 0 and drawn on the free-body diagram, and
+  the same forces are laid tip to tail beside it: the force polygon closes exactly when the ring is in
+  equilibrium. A cable that would have to push is drawn red and called out, and the spring case turns
+  the force into a stretch with Hooke's law.
+- **Moments** (`#/u2/moments`) — a force about a point, worked as `xF_y − yF_x` and as `F·d` side by
+  side with the moment arm drawn; a slider slides the force along its own line of action and the
+  moment does not move. A couple whose moment point you can drag anywhere, with the two separate
+  moments changing and their sum fixed. And `r × F` in 3D, checked against `M·F = 0` and `M·r = 0`,
+  with an optional axis to project onto.
 - **Truss** (`#/u3/truss`) — the method of joints solved as one linear system. Members are coloured
   by tension (blue) and compression (red) and labelled with their force; zero-force members are
   marked; supports, reactions and applied loads are drawn. The panel reports m + r vs 2j, every
@@ -79,7 +89,7 @@ centroids, Pappus–Guldinus and moments of inertia — so those labs are scene 
 
 Press **P** for the problem bank: 22 generated problems across Ch 2–10, grouped by chapter, each
 with fresh numbers every attempt. Problems that have a lab load their own setup into it, and the
-lab's answer is compared with the problem's — 2010 such comparisons run in `npm test`.
+lab's answer is compared with the problem's — 1403 such comparisons run in `npm test`.
 
 Numeric answers, multiple choice, and typed formulas with a live units check. Where a problem has
 both, the numeric boxes stay locked until the formula is right.

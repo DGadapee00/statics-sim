@@ -7,7 +7,7 @@ const U2 = { exam: 'u2' };
 
 export default [
   problem({
-    ...U2, id: 'ch3.two-cables', ch: '3', src: 'Part 2 · 3.8–3.9', title: 'Weight on two cables', kind: 'numeric', level: 2, topics: ['equilibrium'],
+    ...U2, id: 'ch3.two-cables', ch: '3', lab: 'particle', src: 'Part 2 · 3.8–3.9', title: 'Weight on two cables', kind: 'numeric', level: 2, topics: ['equilibrium'],
     vars: { W: range(50, 800, 10, 'lb'), a1: range(100, 170, 5, '°'), a2: range(10, 80, 5, '°') },
     derive: ($) => {
       const sol = particleEq2D([v(0, -$.W, 0)], [fromAngle2D(1, $.a1), fromAngle2D(1, $.a2)]);
@@ -28,10 +28,19 @@ export default [
       String.raw`$\sum F_y = 0:\; T_1\sin\alpha_1 + T_2\sin\alpha_2 = W$`,
       String.raw`$T_{AB} = ${texNum($.T1)}$ lb, $T_{AC} = ${texNum($.T2)}$ lb`,
     ],
+    sim: {
+      scenario: 'two',
+      setup: (s, $) => void Object.assign(s, { W: $.W, a1: $.a1, a2: $.a2, k: 0 }),
+      read: (c) => ({
+        T1: c.particle.members[0].T,
+        T2: c.particle.members[1].T,
+        '@ΣF residual': [c.particle.residual, 0],
+      }),
+    },
     cases: [kase('hand', { W: 100, a1: 150, a2: 45 }, { T1: 73.205, T2: 89.658 })],
   }),
   problem({
-    ...U2, id: 'ch3.spring', ch: '3', src: 'Part 2 · 3.1, 3.7', title: 'Spring stretch in equilibrium', kind: 'numeric', topics: ['equilibrium', 'springs'],
+    ...U2, id: 'ch3.spring', ch: '3', lab: 'particle', src: 'Part 2 · 3.1, 3.7', title: 'Spring stretch in equilibrium', kind: 'numeric', topics: ['equilibrium', 'springs'],
     vars: { k: range(100, 900, 10, 'N/m'), W: range(20, 400, 5, 'N'), th: range(20, 80, 5, '°') },
     // thr is the angle in radians, so the symbolic answer can use sin() the way the parser means it.
     derive: ($) => {
@@ -49,10 +58,16 @@ export default [
       String.raw`$F\sin\theta = W \;\Rightarrow\; F = ${texNum($.F)}\ \text{N}$`,
       String.raw`$s = F/k = ${texNum($.s)}\ \text{m}$`,
     ],
+    // The lab's spring scenario is this problem: a horizontal cable (180°) and the spring at θ.
+    sim: {
+      scenario: 'spring',
+      setup: (s, $) => void Object.assign(s, { W: $.W, a1: 180, a2: $.th, k: $.k }),
+      read: (c) => ({ F: c.particle.members[1].T, s: c.particle.stretch }),
+    },
     cases: [kase('hand', { k: 500, W: 200, th: 30 }, { F: 400, s: 0.8 })],
   }),
   problem({
-    ...U2, id: 'ch4.moment-2d', ch: '4', src: 'Part 2 · 4.14', title: 'Moment of a force about a point', kind: 'numeric', topics: ['moments'],
+    ...U2, id: 'ch4.moment-2d', ch: '4', lab: 'moments', src: 'Part 2 · 4.14', title: 'Moment of a force about a point', kind: 'numeric', topics: ['moments'],
     vars: { F: range(20, 500, 10, 'N'), th: range(0, 350, 10, '°'), x: range(-4, 4, 0.5, 'm'), y: range(-4, 4, 0.5, 'm') },
     derive: ($) => {
       const Fv = fromAngle2D($.F, $.th);
@@ -73,10 +88,15 @@ export default [
       String.raw`$M_O = xF_y - yF_x = ${texNum($.M)}\ \text{N}\cdot\text{m}$`,
       String.raw`$d = |M|/F = ${texNum($.d)}\ \text{m}$`,
     ],
+    sim: {
+      scenario: 'point',
+      setup: (s, $) => void Object.assign(s, { F: $.F, th: $.th, x: $.x, y: $.y }),
+      read: (c) => ({ M: c.mom.Mz, d: c.mom.d, '@|M| = F·d': [c.mom.Fd, Math.abs(c.mom.Mz)] }),
+    },
     cases: [kase('hand', { F: 50, th: 30, x: 4, y: 3 }, { M: -29.904, d: 0.5981 })],
   }),
   problem({
-    ...U2, id: 'ch4.moment-3d', ch: '4', src: 'Part 2 · 4.15–4.20', title: 'Moment as r × F', kind: 'numeric', level: 2, topics: ['moments', 'cross-product'],
+    ...U2, id: 'ch4.moment-3d', ch: '4', lab: 'moments', src: 'Part 2 · 4.15–4.20', title: 'Moment as r × F', kind: 'numeric', level: 2, topics: ['moments', 'cross-product'],
     vars: {
       rx: range(-4, 4, 1, 'm'), ry: range(-4, 4, 1, 'm'), rz: range(-4, 4, 1, 'm'),
       Fx: range(-200, 200, 10, 'N'), Fy: range(-200, 200, 10, 'N'), Fz: range(-200, 200, 10, 'N'),
@@ -97,10 +117,15 @@ export default [
       String.raw`$\vec{M}_O = \vec{r}\times\vec{F} = (${texNum($.Mx)})\hat{i} + (${texNum($.My)})\hat{j} + (${texNum($.Mz)})\hat{k}\ \text{N}\cdot\text{m}$`,
       String.raw`Check: $\vec{M}\cdot\vec{F} = 0$ and $\vec{M}\cdot\vec{r} = 0$, since the moment is perpendicular to both.`,
     ],
+    sim: {
+      scenario: 'cross',
+      setup: (s, $) => void Object.assign(s, { r: [$.rx, $.ry, $.rz], Fv: [$.Fx, $.Fy, $.Fz], axis: false }),
+      read: (c) => ({ Mx: c.mom.M.x, My: c.mom.M.y, Mz: c.mom.M.z, '@M·F': [c.mom.checkF, 0] }),
+    },
     cases: [kase('hand', { rx: 1, ry: 2, rz: 3, Fx: 40, Fy: 50, Fz: 60 }, { Mx: -30, My: 60, Mz: -30 })],
   }),
   problem({
-    ...U2, id: 'ch4.moment-axis', ch: '4', src: 'Part 2 · 4.21–4.25', title: 'Moment about an axis', kind: 'numeric', level: 3, topics: ['moments', 'axis'],
+    ...U2, id: 'ch4.moment-axis', ch: '4', lab: 'moments', src: 'Part 2 · 4.21–4.25', title: 'Moment about an axis', kind: 'numeric', level: 3, topics: ['moments', 'axis'],
     vars: {
       ax: range(-3, 3, 1, 'm'), ay: range(-3, 3, 1, 'm'), az: range(-3, 3, 1, 'm'),
       rx: range(-4, 4, 1, 'm'), ry: range(-4, 4, 1, 'm'), rz: range(-4, 4, 1, 'm'),
@@ -126,10 +151,15 @@ export default [
       String.raw`$M_{axis} = \hat{u}\cdot(\vec{r}\times\vec{F}) = ${texNum($.Maxis)}\ \text{N}\cdot\text{m}$`,
       'A force whose line of action meets the axis, or runs parallel to it, contributes nothing — the triple product vanishes.',
     ],
+    sim: {
+      scenario: 'axis',
+      setup: (s, $) => void Object.assign(s, { u: [$.ax, $.ay, $.az], r: [$.rx, $.ry, $.rz], Fv: [$.Fx, $.Fy, $.Fz], axis: true }),
+      read: (c) => ({ Maxis: c.mom.Maxis }),
+    },
     cases: [kase('hand', { ax: 0, ay: 0, az: 2, rx: 2, ry: 0, rz: 0, Fx: 0, Fy: 50, Fz: 0 }, { Maxis: 100 })],
   }),
   problem({
-    ...U2, id: 'ch4.couple-concept', ch: '4', title: 'What makes a couple special', kind: 'conceptual', topics: ['moments', 'couples'],
+    ...U2, id: 'ch4.couple-concept', ch: '4', lab: 'moments', title: 'What makes a couple special', kind: 'conceptual', topics: ['moments', 'couples'],
     vars: {
       ask: choice(
         ['point', 'The moment of a couple, computed about different points, is'],
@@ -152,6 +182,7 @@ export default [
         ? 'The moment is r × F with r to any point on the line of action, so sliding the force along that line leaves r × F unchanged. This is the principle of transmissibility.'
         : 'The two forces cancel, so the resultant force is zero; the moment works out to r × F with r between the two points of application, which contains no reference to any origin.',
     ],
+    sim: { scenario: 'couple', read: () => ({}) },
     cases: [kase('point', { ask: 'point' }, { ans: 'same' }), kase('net', { ask: 'net' }, { ans: 'zero' })],
   }),
 ];

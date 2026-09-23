@@ -1,5 +1,7 @@
 const loaders = {
   vectors: () => import('./vectors.js'),
+  particle: () => import('./particle.js'),
+  moments: () => import('./moments.js'),
   truss: () => import('./truss.js'),
 };
 

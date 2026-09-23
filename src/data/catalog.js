@@ -16,8 +16,8 @@ export const EXAMS = [
     title: 'Equilibrium & moments',
     chapters: '3–4',
     date: 'Ch 3–4',
-    labs: [],
-    coming: ['Particle equilibrium', 'Moments'],
+    labs: ['particle', 'moments'],
+    coming: [],
   },
   {
     id: 'u3',
@@ -41,6 +41,8 @@ export const EXAMS = [
 
 export const LAB_META = {
   vectors: { id: 'vectors', exam: 'u1', title: 'Vectors' },
+  particle: { id: 'particle', exam: 'u2', title: 'Particle' },
+  moments: { id: 'moments', exam: 'u2', title: 'Moments' },
   truss: { id: 'truss', exam: 'u3', title: 'Truss' },
 };
 
